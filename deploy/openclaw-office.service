@@ -1,0 +1,15 @@
+[Unit]
+Description=OpenClaw Mission Control frontend
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/srv/openclaw-office
+ExecStart=/usr/bin/npx serve -s dist -l 4173
+Restart=always
+RestartSec=5
+User=root
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,10 @@
+import { chromium } from 'playwright'
+const browser = await chromium.launch({ headless: true })
+const page = await browser.newPage({ viewport: { width: 1600, height: 2200 } })
+page.on('pageerror', (err) => console.log('pageerror', err.stack || String(err)))
+await page.setExtraHTTPHeaders({ Authorization: 'Basic ' + Buffer.from('admin:@Crazinerd10111').toString('base64') })
+await page.goto('https://office.esportsza.co.za', { waitUntil: 'networkidle', timeout: 30000 })
+await page.screenshot({ path: '/tmp/openclaw-office-full.png', fullPage: true })
+const text = await page.locator('body').innerText().catch(() => '')
+console.log(text)
+await browser.close()
