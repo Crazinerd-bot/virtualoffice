@@ -5,11 +5,13 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=/srv/openclaw-office
-ExecStart=/usr/bin/npx serve -s dist -l 4173
+ExecStart=/usr/bin/node server.mjs
 Restart=always
 RestartSec=5
 User=root
 Environment=NODE_ENV=production
+Environment=PORT=4173
+Environment=OPENCLAW_GATEWAY_TOKEN=b9e3d5228d4ddab5773e1afcaca7f0f765249bdffe165b53
 
 [Install]
 WantedBy=multi-user.target
