@@ -35,6 +35,14 @@ const modeItems: Array<{ mode: OfficeMode; label: string }> = [
   { mode: 'logs_monitoring', label: 'Logs / Monitoring Mode' },
 ]
 
+const modeViewMap: Record<OfficeMode, CommandCentreView> = {
+  virtual_office: 'office',
+  command_centre: 'command',
+  project_board: 'projects',
+  agent_network: 'network',
+  logs_monitoring: 'logs',
+}
+
 const statusLabel: Record<AgentStatus, string> = {
   idle: 'Idle', thinking: 'Thinking', planning: 'Planning', working: 'Working', waiting_for_tool: 'Waiting for tool', waiting_for_user: 'Waiting for user', reviewing: 'Reviewing', blocked: 'Blocked', completed: 'Completed', failed: 'Failed', paused: 'Paused', offline: 'Offline',
 }
@@ -87,7 +95,7 @@ export function TopCommandBar() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
   useEffect(() => { document.documentElement.dataset.theme = theme }, [theme])
   useEffect(() => { if (!toast) return; const id = window.setTimeout(clearToast, 3200); return () => window.clearTimeout(id) }, [toast, clearToast])
-  return <header className="top-command-bar"><div><p className="eyebrow">Crazinerd / OpenClaw Operations</p><h1>{navItems.find((item) => item.view === currentView)?.label ?? 'Command Centre'}</h1></div><div className="global-search"><Search size={16} /><input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onFocus={() => toggleCommandPalette(true)} placeholder="Search or press ⌘K for commands" /><button onClick={() => toggleCommandPalette(true)}><Command size={15} /> Palette</button></div><select className="mode-select" value={currentMode} onChange={(e) => { const mode = e.target.value as OfficeMode; setMode(mode); if (mode === 'virtual_office') setView('office'); if (mode === 'project_board') setView('projects'); if (mode === 'agent_network') setView('network'); if (mode === 'logs_monitoring') setView('logs') }}>{modeItems.map((item) => <option key={item.mode} value={item.mode}>{item.label}</option>)}</select><button className="icon-button" aria-label="Toggle theme" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>{theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}</button><button className="notif-button" onClick={() => useCommandCentreStore.setState({ activeDrawer: 'notifications' })}><Bell size={18} /><span>{notifications.filter((n) => !n.read).length}</span></button>{toast ? <div className="toast">{toast}</div> : null}</header>
+  return <header className="top-command-bar"><div><p className="eyebrow">Crazinerd / OpenClaw Operations</p><h1>{navItems.find((item) => item.view === currentView)?.label ?? 'Command Centre'}</h1></div><div className="global-search"><Search size={16} /><input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onFocus={() => toggleCommandPalette(true)} placeholder="Search or press ⌘K for commands" /><button onClick={() => toggleCommandPalette(true)}><Command size={15} /> Palette</button></div><select className="mode-select" value={currentMode} onChange={(e) => { const mode = e.target.value as OfficeMode; setMode(mode); setView(modeViewMap[mode]) }}>{modeItems.map((item) => <option key={item.mode} value={item.mode}>{item.label}</option>)}</select><button className="icon-button" aria-label="Toggle theme" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>{theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}</button><button className="notif-button" onClick={() => useCommandCentreStore.setState({ activeDrawer: 'notifications' })}><Bell size={18} /><span>{notifications.filter((n) => !n.read).length}</span></button>{toast ? <div className="toast">{toast}</div> : null}</header>
 }
 
 export function GlobalCommandPalette() {
@@ -240,12 +248,17 @@ export function MemoryBankViewer() {
   return <section className="board-view"><div className="section-head"><div><p className="eyebrow">Memory governance</p><h2>Memory bank viewer</h2></div><button onClick={() => useCommandCentreStore.getState().saveMessageToMemory('msg-2')}>Add memory from decision</button></div><div className="memory-bank-strip">{memoryBanks.map((bank) => <button key={bank.id}>{bank.name}<span>{bank.entryIds.length} entries</span></button>)}</div><div className="content-grid two">{visible.map((memory) => <MemoryEntryCard key={memory.id} memory={memory} />)}</div></section>
 }
 
-export function MemoryEditor() {
-  const { memories, selectedMemoryId, updateMemory, approveMemory, rejectMemory } = useCommandCentreStore()
-  const memory = memories.find((m) => m.id === selectedMemoryId)
-  const [content, setContent] = useState(memory?.content ?? '')
-  if (!memory) return null
+function MemoryEditorForm({ memory }: { memory: ReturnType<typeof useCommandCentreStore.getState>['memories'][number] }) {
+  const { updateMemory, approveMemory, rejectMemory } = useCommandCentreStore()
+  const [content, setContent] = useState(memory.content)
   return <DrawerShell title={memory.title} subtitle={`${memory.type} · ${memory.visibility}`}><textarea className="memory-editor" value={content} onChange={(e) => setContent(e.target.value)} /><div className="drawer-actions"><button onClick={() => updateMemory(memory.id, content)}>Save edit</button><button onClick={() => approveMemory(memory.id)}>Approve</button><button onClick={() => rejectMemory(memory.id)}>Reject</button></div><div className="profile-grid"><div><span>Confidence</span><strong>{memory.confidenceLevel}%</strong></div><div><span>Approval</span><strong>{memory.approvalStatus}</strong></div><div><span>Conflict</span><strong>{String(memory.conflict)}</strong></div><div><span>Used by</span><strong>{memory.lastUsedByAgentIds.join(', ')}</strong></div></div></DrawerShell>
+}
+
+export function MemoryEditor() {
+  const { memories, selectedMemoryId } = useCommandCentreStore()
+  const memory = memories.find((m) => m.id === selectedMemoryId)
+  if (!memory) return null
+  return <MemoryEditorForm key={`${memory.id}:${memory.content}`} memory={memory} />
 }
 
 export function ApprovalCard({ approval }: { approval: ReturnType<typeof useCommandCentreStore.getState>['approvals'][number] }) {
