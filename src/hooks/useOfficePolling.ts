@@ -1,10 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
-import { mockOfficeSnapshot } from '../data/mockOffice'
 import { useOfficeStore } from '../store/useOfficeStore'
 
 export function useOfficePolling() {
   const hydrate = useOfficeStore((state) => state.hydrate)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -16,13 +16,17 @@ export function useOfficePolling() {
         })
         const contentType = res.headers.get('content-type') ?? ''
         if (!res.ok || !contentType.includes('application/json')) {
-          if (active) hydrate(mockOfficeSnapshot)
-          return
+          throw new Error(`Office state request failed with ${res.status}`)
         }
         const data = await res.json()
-        if (active) hydrate(data)
-      } catch {
-        if (active) hydrate(mockOfficeSnapshot)
+        if (active) {
+          hydrate(data)
+          setError(null)
+        }
+      } catch (err) {
+        if (active) {
+          setError(err instanceof Error ? err.message : 'Failed to load office state')
+        }
       }
     }
 
@@ -33,4 +37,6 @@ export function useOfficePolling() {
       window.clearInterval(id)
     }
   }, [hydrate])
+
+  return error
 }

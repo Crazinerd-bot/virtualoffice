@@ -13,9 +13,9 @@ This app is the visual shell for a modern Mission Control experience:
 
 Current build status:
 - working React + Vite + TypeScript app
-- PixiJS office canvas rendering live agent sprites
-- modern dashboard layout, no placeholder landing-page content
-- local mock data seeded from current workspace agent context
+- office canvas rendering live agent sprites
+- modern dashboard layout
+- frontend mock hydration removed, app now waits for live `/api/office-state` data
 
 ## Stack
 
@@ -49,11 +49,11 @@ npm run build
 
 ## Next implementation steps
 
-1. Replace mock store hydration with live OpenClaw task/session feeds.
+1. Replace remaining backend hardcoded office/task/document seed data with real OpenClaw sources.
 2. Add websocket or SSE bridge for realtime session/task updates.
 3. Add per-agent interaction drawer, task detail modals, and document previews.
 4. Finalize reverse proxy, TLS, audit trail, and runtime secret handling for the subdomain.
-5. Add sprite sheets and richer office interactions without sacrificing performance.
+5. Add richer office interactions without sacrificing performance.
 
 ## Notes
 

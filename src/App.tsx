@@ -12,7 +12,7 @@ import './App.css'
 
 function App() {
   useOfficeTicker()
-  useOfficePolling()
+  const officeError = useOfficePolling()
 
   const {
     agents,
@@ -27,6 +27,7 @@ function App() {
     setSelectedTaskId,
     threadStates,
     brains,
+    warnings,
   } = useOfficeStore()
 
   const selectedAgent = agents.find((agent) => agent.id === selectedAgentId) ?? agents[0] ?? null
@@ -43,10 +44,12 @@ function App() {
           <div className="panel-header">
             <div>
               <p className="eyebrow">Crazinerd Mission Control</p>
-              <h2>Office loading</h2>
+              <h2>{officeError ? 'Office unavailable' : 'Office loading'}</h2>
             </div>
           </div>
-          <div className="chat-empty">Waiting for office state...</div>
+          <div className="chat-empty">
+            {officeError ? `Live office data is unavailable: ${officeError}` : 'Waiting for live office state...'}
+          </div>
         </section>
       </main>
     )
@@ -69,6 +72,17 @@ function App() {
       </header>
 
       <section className="hero-grid">
+        {warnings?.length ? (
+          <section className="panel" style={{ gridColumn: '1 / -1' }}>
+            <div className="panel-header">
+              <div>
+                <p className="eyebrow">Data availability</p>
+                <h2>Some sections are limited</h2>
+              </div>
+            </div>
+            <div className="chat-empty">{warnings.join(' ')}</div>
+          </section>
+        ) : null}
         <div className="office-panel panel">
           <div className="panel-header">
             <div>
@@ -165,7 +179,7 @@ function App() {
                     {taskDocuments.map((doc) => <li key={doc.id}>{doc.title}</li>)}
                   </ul>
                 ) : (
-                  <p className="muted">No linked documents yet.</p>
+                  <p className="muted">No live documents are linked to this task.</p>
                 )}
               </div>
             </div>
@@ -177,7 +191,7 @@ function App() {
                     {selectedTask.completedItems.map((item) => <li key={item}>{item}</li>)}
                   </ul>
                 ) : (
-                  <p className="muted">No completed items tracked yet.</p>
+                  <p className="muted">No completed items are being reported for this task.</p>
                 )}
               </div>
               <div className="task-detail-list-card">
@@ -187,7 +201,7 @@ function App() {
                     {selectedTask.todoItems.map((item) => <li key={item}>{item}</li>)}
                   </ul>
                 ) : (
-                  <p className="muted">No outstanding items tracked yet.</p>
+                  <p className="muted">No structured todo feed is connected for this task.</p>
                 )}
               </div>
             </div>
@@ -221,12 +235,16 @@ function App() {
                   <StatusPill status={task.status} />
                 </div>
                 <p>{task.detail}</p>
-                <div className="progress-row">
-                  <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: `${task.progress}%` }} />
+                {task.progress > 0 ? (
+                  <div className="progress-row">
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{ width: `${task.progress}%` }} />
+                    </div>
+                    <span>{task.progress}%</span>
                   </div>
-                  <span>{task.progress}%</span>
-                </div>
+                ) : (
+                  <p className="muted">No live progress feed is connected for this task yet.</p>
+                )}
               </button>
             ))}
           </div>
@@ -261,33 +279,35 @@ function App() {
             <Bot size={18} />
           </div>
           <div className="doc-list brain-list">
-            {(brains ?? []).map((brain) => {
-              const owner = agents.find((agent) => agent.id === brain.agentId)
-              return (
-                <article key={brain.agentId} className="doc-card brain-card" onClick={() => setSelectedAgentId(brain.agentId)}>
-                  <div className="doc-topline">
-                    <span className="doc-kind">{brain.brainId}</span>
-                    <span className="doc-status">{brain.updatedAt ? formatRelativeIso(brain.updatedAt) : 'ready'}</span>
-                  </div>
-                  <strong>{owner?.name ?? brain.agentId}</strong>
-                  <p>{brain.root}</p>
-                  <div className="brain-bucket-grid">
-                    {brain.buckets.map((bucket) => (
-                      <div key={bucket.key} className="brain-bucket-pill">
-                        <span>{bucket.key}</span>
-                        <strong>{bucket.count}</strong>
-                      </div>
-                    ))}
-                  </div>
-                  {brain.contextPack ? (
-                    <div className="brain-preview">
-                      {brain.contextPack.summaries[0] ? <p><strong>Summary:</strong> {brain.contextPack.summaries[0]}</p> : null}
-                      {brain.contextPack.lessons[0] ? <p><strong>Lesson:</strong> {brain.contextPack.lessons[0]}</p> : null}
+            {(brains ?? []).length ? (
+              (brains ?? []).map((brain) => {
+                const owner = agents.find((agent) => agent.id === brain.agentId)
+                return (
+                  <article key={brain.agentId} className="doc-card brain-card" onClick={() => setSelectedAgentId(brain.agentId)}>
+                    <div className="doc-topline">
+                      <span className="doc-kind">{brain.brainId}</span>
+                      <span className="doc-status">{brain.updatedAt ? formatRelativeIso(brain.updatedAt) : 'ready'}</span>
                     </div>
-                  ) : null}
-                </article>
-              )
-            })}
+                    <strong>{owner?.name ?? brain.agentId}</strong>
+                    <p>{brain.root}</p>
+                    <div className="brain-bucket-grid">
+                      {brain.buckets.map((bucket) => (
+                        <div key={bucket.key} className="brain-bucket-pill">
+                          <span>{bucket.key}</span>
+                          <strong>{bucket.count}</strong>
+                        </div>
+                      ))}
+                    </div>
+                    {brain.contextPack ? (
+                      <div className="brain-preview">
+                        {brain.contextPack.summaries[0] ? <p><strong>Summary:</strong> {brain.contextPack.summaries[0]}</p> : null}
+                        {brain.contextPack.lessons[0] ? <p><strong>Lesson:</strong> {brain.contextPack.lessons[0]}</p> : null}
+                      </div>
+                    ) : null}
+                  </article>
+                )
+              })
+            ) : <div className="chat-empty">Brain data is not available yet.</div>}
           </div>
         </section>
 
@@ -304,19 +324,21 @@ function App() {
             <FileText size={18} />
           </div>
           <div className="doc-list">
-            {documents.map((doc) => {
-              const owner = agents.find((agent) => agent.id === doc.ownerId)
-              return (
-                <article key={doc.id} className="doc-card">
-                  <div className="doc-topline">
-                    <span className="doc-kind">{doc.kind}</span>
-                    <span className="doc-status">{doc.status}</span>
-                  </div>
-                  <strong>{doc.title}</strong>
-                  <p>{owner?.name ?? 'Unknown owner'}</p>
-                </article>
-              )
-            })}
+            {documents.length ? (
+              documents.map((doc) => {
+                const owner = agents.find((agent) => agent.id === doc.ownerId)
+                return (
+                  <article key={doc.id} className="doc-card">
+                    <div className="doc-topline">
+                      <span className="doc-kind">{doc.kind}</span>
+                      <span className="doc-status">{doc.status}</span>
+                    </div>
+                    <strong>{doc.title}</strong>
+                    <p>{owner?.name ?? 'Unknown owner'}</p>
+                  </article>
+                )
+              })
+            ) : <div className="chat-empty">No live document feed is connected yet.</div>}
           </div>
         </section>
       </section>

@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 
-import { mockOfficeSnapshot } from '../data/mockOffice'
 import type { OfficeSnapshot } from '../types/office'
 
 const gatewayUrl = import.meta.env.VITE_GATEWAY_URL ?? 'ws://127.0.0.1:18789'
@@ -19,12 +18,29 @@ type OfficeState = OfficeSnapshot & {
 
 const lerp = (from: number, to: number, speed = 0.08) => from + (to - from) * speed
 
+const emptyOfficeSnapshot: OfficeSnapshot = {
+  generatedAt: '',
+  gateway: {
+    connected: false,
+    url: gatewayUrl,
+    lastUpdatedAt: '',
+  },
+  agents: [],
+  tasks: [],
+  documents: [],
+  activity: [],
+  interactions: [],
+  threadStates: [],
+  zones: [],
+  brains: [],
+}
+
 export const useOfficeStore = create<OfficeState>((set) => ({
-  ...mockOfficeSnapshot,
+  ...emptyOfficeSnapshot,
   gatewayUrl,
   gatewayToken,
-  selectedAgentId: 'alicia',
-  selectedTaskId: 'task-office-1',
+  selectedAgentId: null,
+  selectedTaskId: null,
   setSelectedAgentId: (selectedAgentId) => set({ selectedAgentId }),
   setSelectedTaskId: (selectedTaskId) => set({ selectedTaskId }),
   hydrate: (snapshot) => set((state) => ({ ...state, ...snapshot })),

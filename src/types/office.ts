@@ -115,4 +115,5 @@ export type OfficeSnapshot = {
   threadStates?: OfficeThreadState[]
   zones?: OfficeZone[]
   brains?: AgentBrainSummary[]
+  warnings?: string[]
 }

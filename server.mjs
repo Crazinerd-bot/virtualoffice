@@ -206,9 +206,9 @@ function inferAnimationFromStatus(status) {
 }
 
 function inferProgressFromTokens(tokens) {
-  if (!tokens) return 20
+  if (!tokens) return 0
   const match = tokens.match(/\((\d+)%\)/)
-  if (!match) return 20
+  if (!match) return 0
   return Math.max(5, Math.min(95, Number(match[1])))
 }
 
@@ -225,28 +225,46 @@ function mapSessionToAgentId(sessionKey = '') {
 }
 
 function sessionTitleForAgent(agentId) {
-  if (agentId === 'angela') return 'Angela production watch'
-  if (agentId === 'john') return 'John engineering lane'
-  if (agentId === 'lia') return 'Lia security review lane'
-  if (agentId === 'presh') return 'Presh marketing research lane'
-  if (agentId === 'oryn') return 'Oryn isolated task lane'
-  if (agentId === 'drone-dev') return 'Drone Dev WordPress lane'
-  if (agentId === 'drone-growth') return 'Drone Growth SEO lane'
-  return 'Mission Control session'
+  if (agentId === 'angela') return 'Angela live session'
+  if (agentId === 'john') return 'John live session'
+  if (agentId === 'lia') return 'Lia live session'
+  if (agentId === 'presh') return 'Presh live session'
+  if (agentId === 'oryn') return 'Oryn live session'
+  if (agentId === 'drone-dev') return 'Drone Dev live session'
+  if (agentId === 'drone-growth') return 'Drone Growth live session'
+  return 'Mission Control live session'
 }
 
 function sessionToTask(session, index) {
   const agentId = mapSessionToAgentId(session.key)
   const status = inferStatusFromSession(session)
+  const progress = inferProgressFromTokens(session.tokens)
   return {
     id: `task-session-${index}`,
     title: sessionTitleForAgent(agentId),
-    detail: `${session.origin || session.key} · ${session.age}`,
-    progress: Math.max(20, Math.min(95, status === 'working' ? 78 : status === 'reviewing' ? 56 : 24)),
+    detail: `${session.origin || session.key} · ${session.age}. This task card reflects live session presence, not a structured backend task feed.`,
+    progress,
     status,
     documentIds: [],
     updatedAt: new Date().toISOString(),
     ownerId: agentId,
+    completedItems: [],
+    todoItems: ['Connect a real task source if you want structured task details here.'],
+  }
+}
+
+function honestPlaceholderTask(agent) {
+  return {
+    id: `task-unavailable-${agent.id}`,
+    title: `${agent.name} task data unavailable`,
+    detail: 'This screen no longer shows invented work items. A real backend task feed is still missing for this agent.',
+    progress: 0,
+    status: 'blocked',
+    documentIds: [],
+    updatedAt: new Date().toISOString(),
+    ownerId: agent.id,
+    todoItems: ['Connect this agent to a real backend task source.'],
+    completedItems: [],
   }
 }
 
@@ -260,81 +278,21 @@ const officeZones = [
   { id: 'zone-drone-ops', label: 'Drone by Nature Ops', x: 772, y: 430, width: 232, height: 122, tone: 'workspace' },
 ]
 
-const baseTasks = [
-  { id: 'task-office-1', title: 'Run live Mission Control', detail: 'Realtime office presence, direct chat, and auto-refresh office state.', progress: 74, status: 'working', documentIds: ['doc-office-spec', 'doc-ui-arch'], updatedAt: new Date().toISOString() },
-  { id: 'task-guestlist-1', title: 'Guestlist production support readiness', detail: 'Live Firebase connectivity, schema guardrails, and 5-minute Angela checks.', progress: 82, status: 'reviewing', documentIds: ['doc-angela-plan'], updatedAt: new Date().toISOString() },
-  { id: 'task-drone-1', title: 'Build Oryn public chat plugin', detail: 'Replace Tidio with a production-ready WordPress plugin that routes all public chats to Oryn.', progress: 26, status: 'working', documentIds: ['doc-oryn-plan'], updatedAt: new Date().toISOString() },
-  { id: 'task-drone-dev-1', title: 'Build Drone by Nature WordPress integration', detail: 'WordPress plugin, DirectAdmin access, and server SSH wiring.', progress: 24, status: 'working', documentIds: ['doc-drone-dev-plan'], updatedAt: new Date().toISOString() },
-  { id: 'task-drone-growth-1', title: 'Develop Drone by Nature SEO strategy', detail: 'SEO audit, content pipeline, and growth metrics setup.', progress: 22, status: 'reviewing', documentIds: ['doc-drone-growth-plan'], updatedAt: new Date().toISOString() },
-  { id: 'task-john-1', title: 'Engineer duplicate-account abuse prevention', detail: 'Backend-first risk modeling, signup enforcement, and admin controls.', progress: 52, status: 'working', documentIds: ['doc-john-plan'], updatedAt: new Date().toISOString() },
-  { id: 'task-lia-1', title: 'Review abuse and security controls', detail: 'Layered fraud detection, false-positive control, and rollout guardrails.', progress: 48, status: 'reviewing', documentIds: ['doc-lia-plan'], updatedAt: new Date().toISOString() },
-  { id: 'task-presh-1', title: 'Curate daily marketing pipeline', detail: 'Trend-backed goer and host notifications prepared for Angela.', progress: 32, status: 'working', documentIds: ['doc-presh-plan'], updatedAt: new Date().toISOString() },
-]
-
-const baseDocuments = [
-  { id: 'doc-office-spec', title: 'Mission Control product brief', kind: 'spec', ownerId: 'alicia', status: 'active', updatedAt: new Date().toISOString() },
-  { id: 'doc-ui-arch', title: 'Realtime office UI architecture', kind: 'design', ownerId: 'alicia', status: 'draft', updatedAt: new Date().toISOString() },
-  { id: 'doc-angela-plan', title: 'Angela production support plan', kind: 'ops', ownerId: 'angela', status: 'review', updatedAt: new Date().toISOString() },
-  { id: 'doc-oryn-plan', title: 'Oryn integration plan', kind: 'ops', ownerId: 'oryn', status: 'draft', updatedAt: new Date().toISOString() },
-  { id: 'doc-drone-dev-plan', title: 'Drone Dev WordPress integration plan', kind: 'code', ownerId: 'drone-dev', status: 'draft', updatedAt: new Date().toISOString() },
-  { id: 'doc-drone-growth-plan', title: 'Drone Growth SEO strategy', kind: 'design', ownerId: 'drone-growth', status: 'draft', updatedAt: new Date().toISOString() },
-  { id: 'doc-john-plan', title: 'John abuse-prevention implementation plan', kind: 'code', ownerId: 'john', status: 'draft', updatedAt: new Date().toISOString() },
-  { id: 'doc-lia-plan', title: 'Lia abuse-risk strategy', kind: 'ops', ownerId: 'lia', status: 'review', updatedAt: new Date().toISOString() },
-  { id: 'doc-presh-plan', title: 'Presh daily marketing workflow', kind: 'design', ownerId: 'presh', status: 'draft', updatedAt: new Date().toISOString() },
-]
-
 const officeState = {
   generatedAt: new Date().toISOString(),
   gateway: {
-    connected: true,
-    url: 'wss://office.esportsza.co.za/ws',
+    connected: Boolean(token),
+    url: process.env.OPENCLAW_GATEWAY_URL || 'ws://127.0.0.1:18789',
     lastUpdatedAt: new Date().toISOString(),
   },
-  agents: [
-    {
-      id: 'alicia', name: 'Alicia', role: 'Coordinator', color: '#7c3aed', status: 'working', initials: 'AL', face: '✨', avatarUrl: '/avatars/alicia-pixel.svg', animation: 'reviewing', deskId: 'desk-alicia', zoneId: 'zone-work-a', position: { x: 430, y: 164 }, target: { x: 430, y: 164 }, currentTaskId: 'task-office-1', note: 'Coordinating Mission Control and agent routing', speechBubble: 'office live',
-    },
-    {
-      id: 'angela', name: 'Angela', role: 'Guestlist Ops', color: '#10b981', status: 'idle', initials: 'AN', face: '🧠', avatarUrl: '/avatars/angela-pixel.svg', animation: 'sitting', deskId: 'desk-angela', zoneId: 'zone-work-b', position: { x: 618, y: 300 }, target: { x: 618, y: 300 }, currentTaskId: 'task-guestlist-1', note: 'Watching Guestlist support, verification, payments, and moderation', speechBubble: 'monitoring',
-    },
-    {
-      id: 'oryn', name: 'Oryn', role: 'Drone Ops Manager', color: '#f59e0b', status: 'working', initials: 'OR', face: '🛠️', avatarUrl: '/avatars/oryn-pixel-small.svg', animation: 'talking', deskId: 'desk-oryn', zoneId: 'zone-drone-ops', position: { x: 912, y: 470 }, target: { x: 912, y: 470 }, currentTaskId: 'task-drone-1', note: 'Running Drone by Nature chat and plugin rollout planning', speechBubble: 'ops live',
-    },
-    {
-      id: 'drone-dev', name: 'Drone Dev', role: 'WordPress Developer', color: '#2563eb', status: 'working', initials: 'DD', face: '🧩', avatarUrl: '/avatars/drone-dev-pixel.svg', animation: 'reviewing', deskId: 'desk-drone-dev', zoneId: 'zone-drone-ops', position: { x: 826, y: 510 }, target: { x: 826, y: 510 }, currentTaskId: 'task-drone-dev-1', note: 'Designing the Oryn chat plugin and Tidio replacement path', speechBubble: 'building',
-    },
-    {
-      id: 'drone-growth', name: 'Drone Growth', role: 'SEO and Growth', color: '#c026d3', status: 'reviewing', initials: 'DG', face: '📣', avatarUrl: '/avatars/drone-growth-pixel.svg', animation: 'pairing', deskId: 'desk-drone-growth', zoneId: 'zone-drone-ops', position: { x: 994, y: 510 }, target: { x: 994, y: 510 }, currentTaskId: 'task-drone-growth-1', note: 'Reviewing SEO cleanup and conversion gaps across Drone by Nature', speechBubble: 'auditing',
-    },
-    {
-      id: 'john', name: 'John', role: 'Senior Developer', color: '#2563eb', status: 'working', initials: 'JO', face: '💻', avatarUrl: '/avatars/drone-dev-pixel.svg', animation: 'reviewing', deskId: 'desk-john', zoneId: 'zone-work-a', position: { x: 530, y: 164 }, target: { x: 530, y: 164 }, currentTaskId: 'task-john-1', note: 'Driving app and website engineering work', speechBubble: 'coding',
-    },
-    {
-      id: 'lia', name: 'Lia', role: 'Cybersecurity Specialist', color: '#dc2626', status: 'reviewing', initials: 'LI', face: '🛡️', avatarUrl: '/avatars/drone-growth-pixel.svg', animation: 'pairing', deskId: 'desk-lia', zoneId: 'zone-work-a', position: { x: 660, y: 164 }, target: { x: 660, y: 164 }, currentTaskId: 'task-lia-1', note: 'Reviewing abuse prevention and security posture', speechBubble: 'reviewing',
-    },
-    {
-      id: 'presh', name: 'Presh', role: 'Marketing Researcher', color: '#db2777', status: 'working', initials: 'PR', face: '📈', avatarUrl: '/avatars/drone-growth-pixel.svg', animation: 'talking', deskId: 'desk-presh', zoneId: 'zone-meeting', position: { x: 904, y: 164 }, target: { x: 904, y: 164 }, currentTaskId: 'task-presh-1', note: 'Curating daily goer and host notification material', speechBubble: 'researching',
-    },
-  ],
-  tasks: baseTasks,
-  documents: baseDocuments,
-  interactions: [
-    { id: 'int-1', fromAgentId: 'alicia', toAgentId: 'angela', kind: 'handoff', label: 'Support context' },
-    { id: 'int-2', fromAgentId: 'john', toAgentId: 'lia', kind: 'discussion', label: 'Security review' },
-    { id: 'int-3', fromAgentId: 'presh', toAgentId: 'angela', kind: 'handoff', label: 'Daily campaign handoff' },
-    { id: 'int-4', fromAgentId: 'oryn', toAgentId: 'drone-dev', kind: 'handoff', label: 'Plugin build' },
-    { id: 'int-5', fromAgentId: 'oryn', toAgentId: 'drone-growth', kind: 'discussion', label: 'SEO cleanup' },
-  ],
+  agents: [],
+  tasks: [],
+  documents: [],
+  interactions: [],
   zones: officeZones,
-  activity: [
-    { id: 'act-1', timestamp: new Date().toISOString(), agentId: 'alicia', kind: 'task', title: 'Mission Control is live', detail: 'Office now auto-refreshes and no manual reload should be needed.' },
-    { id: 'act-2', timestamp: new Date().toISOString(), agentId: 'angela', kind: 'system', title: 'Angela 5-minute watch enabled', detail: 'Guestlist production checks are now scheduled every 5 minutes.' },
-    { id: 'act-3', timestamp: new Date().toISOString(), agentId: 'oryn', kind: 'message', title: 'Idle support presence', detail: 'Oryn remains available for future integration and ops work.' },
-    { id: 'act-4', timestamp: new Date().toISOString(), agentId: 'john', kind: 'task', title: 'Engineering review active', detail: 'John is mapping backend-first anti-abuse implementation work.' },
-    { id: 'act-5', timestamp: new Date().toISOString(), agentId: 'lia', kind: 'system', title: 'Security review active', detail: 'Lia is reviewing duplicate-account abuse and false-positive controls.' },
-    { id: 'act-6', timestamp: new Date().toISOString(), agentId: 'presh', kind: 'document', title: 'Marketing workflow active', detail: 'Presh is preparing the daily notification handoff loop for Angela.' },
-  ],
+  activity: [],
   brains: [],
+  warnings: [],
 }
 
 const defaultAgents = [
@@ -447,20 +405,30 @@ setInterval(() => {
     detail: thread.latestUserMessage,
     progress: thread.status === 'resolved' ? 100 : thread.status === 'awaiting_user' ? 60 : thread.status === 'in_progress' ? 72 : 48,
     status: thread.status === 'resolved' ? 'reviewing' : thread.status === 'awaiting_user' ? 'blocked' : 'working',
-    documentIds: ['doc-angela-plan'],
+    documentIds: [],
     updatedAt: thread.updatedAt || officeState.generatedAt,
+    ownerId: 'angela',
+    completedItems: [],
+    todoItems: thread.status === 'awaiting_user' ? ['Waiting for user reply.'] : [],
   }))
   officeState.threadStates = angelaThreads.threads.slice(0, 5)
   const sessionTasks = liveSessions
     .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
-    .slice(0, 3)
+    .slice(0, 8)
     .map(sessionToTask)
-  officeState.tasks = [
-    ...liveAngelaTasks,
-    ...sessionTasks,
-    ...baseTasks,
-  ].slice(0, 12)
-  officeState.documents = baseDocuments
+
+  const activeTaskOwners = new Set([...liveAngelaTasks, ...sessionTasks].map((task) => task.ownerId).filter(Boolean))
+  const placeholderTasks = officeState.agents
+    .filter((agent) => !activeTaskOwners.has(agent.id))
+    .map(honestPlaceholderTask)
+
+  officeState.tasks = [...liveAngelaTasks, ...sessionTasks, ...placeholderTasks].slice(0, 12)
+  officeState.documents = []
+  officeState.warnings = [
+    'Task cards without a real task backend now say so explicitly.',
+    'The documents panel is currently unavailable because no live document source is connected.',
+    'Brain summaries are live only when the matching workspace brain files exist and can be read.',
+  ]
 
   officeState.activity = [
     ...liveSessions
@@ -486,13 +454,9 @@ setInterval(() => {
     { id: 'act-2', timestamp: officeState.generatedAt, agentId: 'angela', kind: 'system', title: 'Angela 5-minute watch enabled', detail: 'Guestlist production checks are now scheduled every 5 minutes.' },
     { id: 'act-3', timestamp: officeState.generatedAt, agentId: 'oryn', kind: 'message', title: 'Idle support presence', detail: 'Oryn remains available for future integration and ops work.' },
   ].slice(0, 8)
-  officeState.interactions = [
-    ...(hasAngelaThreads || hasAngelaActivity
-      ? [{ id: 'int-live', fromAgentId: 'alicia', toAgentId: 'angela', kind: 'handoff', label: 'Ops handoff' }]
-      : []),
-    { id: 'int-john-lia', fromAgentId: 'john', toAgentId: 'lia', kind: 'discussion', label: 'Abuse review' },
-    { id: 'int-presh-angela', fromAgentId: 'presh', toAgentId: 'angela', kind: 'handoff', label: 'Campaign handoff' },
-  ]
+  officeState.interactions = hasAngelaThreads || hasAngelaActivity
+    ? [{ id: 'int-live', fromAgentId: 'alicia', toAgentId: 'angela', kind: 'handoff', label: 'Ops handoff' }]
+    : []
 
   ;[['alicia','/root/.openclaw/workspace'],['angela','/root/.openclaw/workspace/angela'],['oryn','/root/.openclaw/workspace/oryn'],['drone-dev','/root/.openclaw/workspace/drone-dev'],['drone-growth','/root/.openclaw/workspace/drone-growth'],['john','/root/.openclaw/workspace/john'],['lia','/root/.openclaw/workspace/lia'],['presh','/root/.openclaw/workspace/presh']].forEach(([agentId, workspaceDir]) => enrichBrainFromWorkspace(agentId, workspaceDir))
 
