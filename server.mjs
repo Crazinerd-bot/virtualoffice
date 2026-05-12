@@ -1,5 +1,5 @@
 import http from 'node:http'
-import { readFileSync, createReadStream, existsSync, writeFileSync } from 'node:fs'
+import { readFileSync, createReadStream, existsSync, writeFileSync, mkdirSync } from 'node:fs'
 import { extname, join, normalize } from 'node:path'
 
 const root = '/srv/openclaw-office'
@@ -67,6 +67,7 @@ function writeJson(file, data) {
 
 function ensureBrainScaffold(agentId, workspaceDir) {
   const rootDir = join(workspaceDir, '.openclaw', 'brain')
+  mkdirSync(rootDir, { recursive: true })
   const now = new Date().toISOString()
   const files = {
     'brain.json': { schemaVersion: 1, agent_id: agentId, brain_id: `brain-${agentId === 'alicia' ? 'main' : agentId}`, root: rootDir, createdAt: now, buckets: { memory: 'memory.json', skills: 'skills.json', reflections: 'reflections.json', context_summary: 'context-summary.json', reusable_instructions: 'instructions.json' } },
